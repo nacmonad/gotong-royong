@@ -9,6 +9,8 @@
   "author": "nacmonad",
   "license": "ISC",
   "dependencies": {
+    "ethereumjs-tx": "^1.3.3",
+    "ethereumjs-util": "^5.1.2",
     "express": "^4.15.4",
     "python-shell": "^0.4.0",
     "web3": "^1.0.0-beta.18"
