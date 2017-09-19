@@ -14,10 +14,17 @@ export const setEvents = events => {
 
 export const addEvent = event => {
   return {
-    type: 'add_event',
+    type: 'ADD_EVENT',
     event
   }
 }
+export const removeEvent = event => {
+  return {
+    type: 'REMOVE_EVENT',
+    event
+  }
+}
+
 
 export const initializeCoinState = coinState => {
   return {

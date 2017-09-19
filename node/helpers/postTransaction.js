@@ -1,47 +1,47 @@
 var tokenContract = require('../config').tokenContract()
-var w3 = require('../config').instance();
+var web3 = require('../config').instance();
 var Account = require('../config').Account()
-var EthTx = require('ethereumjs-tx');
 var addressParser = require('./addressParser')
 
 exports.postTransaction = async function (address, time) {
   //check if iban address
+  console.log(address)
+  console.log(addressParser(address))
   console.log(time)
   console.log(Account)
 
   try {
-    // suppose you want to call a function named myFunction of myContract
-    tokenContract.methods.awardToken(addressParser(address),1)
-        .send({from:Account.public})
-        .then(console.log);
+    //web3.eth.personal.unlockAccount(web3.eth.coinbase);
 
-    /*var balance = await tokenContract.methods.balanceOf("0x5f53bcd06cdaefe3d2699a4215f9ca55ee168e68").call()
-    var gasPrice = await w3.eth.getGasPrice()
-    var hashRate = await w3.eth.getHashrate()
-    //console.log(w3.Iban.toAddress())
-    var pkey1 = new Buffer(Account.privateKey, 'hex')
-    var nonce = await w3.eth.getTransactionCount(Account.public)
-    var to = ''
-    var gasLimit = 210000
+    web3.eth.getBalance(Account.address).then(console.log)
+    // var response = await tokenContract.methods.awardToken(addressParser(address),1).send({from:Account.public})
+    // console.log(response)
 
-    var value = 0;
+    let tx = {}
+    //tx.nonce = await web3.eth.getTransactionCount(Account.public);
+    tx.nonce = await web3.eth.getTransactionCount(Account.address);
+    tx.chainId = 42;  //Kovan
+    tx.from = Account.address;
+    tx.to = tokenContract.options.address;
+    tx.data = tokenContract.methods.awardToken(addressParser(address),"1000000000000000").encodeABI();
+    // //tx.gas = await web3.eth.getGasPrice();
+    tx.gas = 228888;
+    tx.gasPrice = 20000000000;  //20 GWei
+    tx.gasLimit = 200000;
 
-    //console.log(tokenContract.methods)
-    var rate = await tokenContract.methods.getRate().call()
-    var switchState = await tokenContract.methods.getSwitchState().call()
-    var availableForAuction = await tokenContract.methods.getAvailableForAuction().call()
+    console.log(tx)
 
-    console.log({
-      pkey1:pkey1.toString('hex'),
-      nonce,
-      gasPrice,
-      rate,
-      switchState,
-      availableForAuction,
-      superSpecialtokens:balance
-    })*/
+    const signedTx = await Account.signTransaction(tx, Account.privateKey);
+    console.log(signedTx)
 
-  } catch (e) {
-    console.log(e)
-  }
+    const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+    console.log(receipt)
+
+   } catch (e) {
+     console.log(e)
+    //  //web3.eth.net.getId().then(console.log)
+    web3.eth.getBalance(Account.address).then(console.log)
+   }
+
+
 }

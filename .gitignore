@@ -1,1 +1,6 @@
 /node/node_modules
+
+*.avi
+*.wav
+*.mp4
+*.mp3

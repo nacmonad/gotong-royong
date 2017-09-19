@@ -7,24 +7,31 @@ export const eventFilter = (state = 'All', action) => {
   }
 }
 
-export const events = (state = [], action) => {
-  switch (action.type) {
-    case 'ADD_EVENT':
-      let arr = state;
-      arr.push(action.event);
-      return arr
-    case 'SET_EVENTS':
-      arr = action.events;
-      return arr
-    default:
-      return state
-  }
-}
-
 export const coinState = (state = {}, action) => {
   switch (action.type) {
     case 'INITIALIZE_COIN_STATE':
-      return { ...action.coinState}
+      let arr = action.coinState;
+      arr.pastEvents = arr.pastEvents.reverse();
+      return { ...arr}
+    case 'COINSTATE_UPDATE':
+        return { ...action.newCoinState }
+    case 'ADD_EVENT':
+        return {
+            ...state,
+            blockNo:action.event.blockNumber,
+            pastEvents: [
+              action.event,
+              ...state.pastEvents
+            ]
+          }
+      case 'REMOVE_EVENT':
+          return {
+              ...state,
+              pastEvents: [
+                ...state.pastEvents.slice(0, action.index),
+                ...state.pastEvents.slice(action.index+1)
+              ]
+            }
     default:
       return state
   }

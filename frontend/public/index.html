@@ -10,8 +10,43 @@
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json">
     <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico">
-    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.12/semantic.min.css"></link>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.12/semantic.min.css"></link>
+    <style>
+        .event {
+          margin: 20px 0 20px 0;
+        }
 
+        .event-enter {
+            opacity: 0;
+            transform:   translate(-250px,0);
+            transform: translate3d(-250px,0,0);
+        }
+        .event-enter.event-enter-active {
+          opacity: 1;
+          transition: opacity 1s ease;
+          transform:   translate(0,0);
+          transform: translate3d(0,0,0);
+          transition-property: transform, opacity;
+          transition-duration: 300ms;
+          transition-timing-function: cubic-bezier(0.175, 0.665, 0.320, 1), linear;
+        }
+        .event-leave {
+          opacity: 1;
+          transform:   translate(0,0,0);
+          transform: translate3d(0,0,0);
+          transition-property: transform, opacity;
+          transition-duration: 300ms;
+          transition-timing-function: cubic-bezier(0.175, 0.665, 0.320, 1), linear;
+        }
+        .event-leave.event-leave-active {
+          opacity: 0;
+          transform:   translate(250px,0);
+          transform: translate3d(250px,0,0);
+        }
+        div.active > button {
+          background-color:rgba(0,0,0,0.08) !important;
+        }
+    </style>
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.

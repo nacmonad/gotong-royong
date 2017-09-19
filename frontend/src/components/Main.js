@@ -1,36 +1,22 @@
 import React, { Component } from 'react';
 import {bindActionCreators, } from 'redux';
 import { connect } from 'react-redux';
-import { Dimmer, Feed, Grid, Header, Loader, Segment } from 'semantic-ui-react'
+import { Dimmer, Grid, Header, Loader, Segment } from 'semantic-ui-react'
 
 import TotalSupply from './TotalSupply';
-import AvailableForAuction from './AvailableForAuction'
-import Event from './Event';
+
 import EventMenu from './EventMenu';
 import DigitalClock from './DigitalClock';
 import { QRCode } from 'react-qr-svg';
 import { setEventFilter, setEvents, addEvent } from '../modules/actions';
+import darkBaseTheme from 'material-ui/styles/baseThemes/darkBaseTheme';
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
+import getMuiTheme from 'material-ui/styles/getMuiTheme';
 
 const styles = {
-  height: '100vh',
+  minHeight: '100vh',
   backgroundColor:'black'
 }
-
-const events = [{
-      user:"Joe Schmoe",
-      time:"1 hour ago",
-      likeCount:4
-    },
-    {
-      user:"Foo Bar",
-      time:"2 days ago",
-      likeCount:2
-    },
-    {
-      user:"Mike Hunt",
-      time:"4 days ago",
-      likeCount:13
-    },]
 
 class Main extends Component {
   constructor() {
@@ -38,84 +24,87 @@ class Main extends Component {
     this.state = {
       synchronized: false,
     }
+    this._addEvent = this._addEvent.bind(this);
   }
-  // async _fetchEvents() {
-  //   return await this.props.contract.events.getPastEvents('allEvents', {
-  //     fromBlock: 0,
-  //     toBlock: 'latest'
-  //   }).then(console.log);
-  // }
-  componentDidMount() {
-    try {
-      //setup listener for all events
-      var events = this.props.contract.events.allEvents({}, function(error, log){
-        if (!error) console.log(log);
-      });
-    } catch (e) {
-      //error setting up listener
-      console.log(e)
-    }
 
-  events.subscribe(console.log)
+  _addEvent(e){
+    this.props.addEvent(e);
+  }
+  componentDidMount() {
+    const addTheEvent = this._addEvent;
+
+    try {
+      this.props.contract.events.allEvents({
+          fromBlock: 3670373,
+        }, )
+        .on('changed', function(e){
+          console.log(e)
+        }).on('data', function(e){
+          addTheEvent(e);
+        }).on('error', function(e){
+          console.log(e)
+        });
+      } catch (e) {
+        //error setting up listener
+        console.log(e)
+      }
+
   }
 
   render() {
     return (
-      <div className="Main" style={styles}>
-      <Segment inverted>
-        <Grid inverted stackable columns={3}>
-          <Grid.Column>
-              <Header style={{display:'block'}} as='h2' inverted>
-                    Switch Coin
-              </Header>
-              <Header style={{display:'block'}} as='h4' inverted>
-                    Block #: {this.props.coinState.blockNo}
-              </Header>
-          </Grid.Column>
-          <Grid.Column style={{display:'flex', justifyContent:'center', alignItems:'center'}}>
-              <DigitalClock/>
-          </Grid.Column>
-          <Grid.Column >
-              {typeof(this.props.coinState.address) !== 'undefined' &&
-                <div style={{display:'flex', flexDirection:'column'}}>
-                  <QRCode
-                      bgColor="#FFFFFF"
-                      fgColor="#000000"
-                      level="Q"
-                      value={this.props.coinState.address}
-                      style={{width:128, height:128}}  />
-                      <div>{this.props.coinState.address}</div>
-                  </div>}
-          </Grid.Column>
-        </Grid>
-      </Segment>
-        <Grid inverted stackable columns={2}>
-          <Grid.Column>
-              <TotalSupply totalSupply={this.props.coinState.totalSupply}/>
-          </Grid.Column>
-          <Grid.Column>
-              <AvailableForAuction availableForAuction={this.props.coinState.availableForAuction}/>
-          </Grid.Column>
-        </Grid>
-          <EventMenu eventFilter={this.props.eventFilter} setEventFilter={this.props.setEventFilter}/>
+      <MuiThemeProvider muiTheme={getMuiTheme(darkBaseTheme)}>
+        <div className="Main" style={styles}>
+        <Segment inverted>
+          <Grid inverted stackable columns={3}>
+            <Grid.Column>
+                <Header style={{display:'block'}} as='h2' inverted>
+                      Switch Coin
+                </Header>
+                <Header style={{display:'block'}} as='h4' inverted>
+                      Block #: {this.props.coinState.blockNo}
+                </Header>
+            </Grid.Column>
+            <Grid.Column style={{display:'flex', justifyContent:'center', alignItems:'center'}}>
+                <DigitalClock switchState={this.props.coinState.switchState}/>
+            </Grid.Column>
+            <Grid.Column >
+                {typeof(this.props.coinState.address) !== 'undefined' &&
+                  <div style={{display:'flex', flexDirection:'column'}}>
+                    <QRCode
+                        bgColor="#FFFFFF"
+                        fgColor="#000000"
+                        level="Q"
+                        value={this.props.coinState.address}
+                        style={{width:128, height:128}}  />
+                      <div><a href={`http://kovan.etherscan.io/address/${this.props.coinState.address}`} target="_blank" >{this.props.coinState.address}</a></div>
+                    </div>}
+            </Grid.Column>
+          </Grid>
+        </Segment>
+          <Grid inverted stackable columns={2}>
+            <Grid.Column>
+                <TotalSupply name={"Total Supply"} value={this.props.coinState.totalSupply}/>
+            </Grid.Column>
+            <Grid.Column>
+                <TotalSupply name={"Available For Auction"} value={this.props.coinState.availableForAuction}/>
+            </Grid.Column>
+          </Grid>
+
           <Segment inverted>
-            <Dimmer active={typeof(this.props.coinState.address) !== 'undefined' && !this.state.synchronized}>
-                <Loader className="EventLoader"
-                  >Subscribing to events...</Loader>
-            </Dimmer>
-            <Feed>
-              {events.map(Event)}
-            </Feed>
+            <EventMenu eventFilter={this.props.eventFilter} setEventFilter={this.props.setEventFilter} coinState={this.props.coinState}/>
           </Segment>
-        <Dimmer
-           active={typeof(this.props.coinState.address) === 'undefined'}
-           page
-         >
-         <Header as='h2' icon inverted>
-           <Loader className="Loader">Retrieving Smart Contract Info...</Loader>
-         </Header>
-       </Dimmer>
-      </div>
+
+          <Dimmer
+             active={typeof(this.props.coinState.address) === 'undefined'}
+             page
+           >
+           <Header as='h2' icon>
+             <Loader className="Loader">Retrieving Smart Contract Info...</Loader>
+           </Header>
+         </Dimmer>
+        </div>
+    </MuiThemeProvider>
     );
   }
 }
@@ -124,7 +113,6 @@ function mapStateToProps(state) {
   return {
       eventFilter:state.eventFilter,
       coinState:state.coinState,
-      events:state.events
   };
 }
 

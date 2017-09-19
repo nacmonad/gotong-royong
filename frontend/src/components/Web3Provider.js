@@ -15,18 +15,16 @@ export default (ChildComponent) => {
         availableForAuction: await Contract.methods.getAvailableForAuction().call(),
         rate: await Contract.methods.getRate().call(),
         switchState: await Contract.methods.getSwitchState().call(),
-        owner: await Contract.methods.owner().call()
+        owner: await Contract.methods.owner().call(),
+        pastEvents: await Contract.getPastEvents('allEvents', {
+            fromBlock: 1599518,
+            toBlock: 'latest'
+        })
       }
     }
     get().then((res)=>{
       store.dispatch({type:"INITIALIZE_COIN_STATE", coinState:res});
     })
-    console.log(Contract.options.address)
-    // web3.eth.getBlockNumber().then(console.log)
-    // Contract.methods.totalSupply().call().then(console.log)
-    // Contract.methods.getAvailableForAuction().call().then(console.log)
-    // Contract.methods.getRate().call().then(console.log)
-    // Contract.methods.getSwitchState().call().then(console.log)
   } catch (e) {
     console.log(e)
   }
@@ -35,6 +33,6 @@ export default (ChildComponent) => {
   //setup event listeners
 
   return (
-        <ChildComponent contract={Contract}/>
+        <ChildComponent web3 = {web3} contract={Contract}/>
       )
 }

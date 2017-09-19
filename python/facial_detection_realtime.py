@@ -12,6 +12,7 @@ face_cascade = cv2.CascadeClassifier('/home/nacmonad/Downloads/OpenCV/data/haarc
 
 #set up webcam
 cap = cv2.VideoCapture(0)
+out = None
 
 def genFacesFrame(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -24,10 +25,11 @@ def genFacesFrame(img):
         roi_color = img[y:y+h, x:x+w]
     return img
 
-def detectQR():
+def detectQR(frame):
     global oldQR
     global userSignedIn
     global startTime
+    global out
 
     image = Image.open('./grayscale.png')
     image.load()
@@ -37,21 +39,30 @@ def detectQR():
         if(codes != oldQR):
             oldQR = codes
             #print("New wallet address detected -- perform away!")
-            #print(codes)
+            #start recording as well
             userSignedIn = True
             startTime = time.time()
+        if out is None:
+            print("file created")
+            out = cv2.VideoWriter('./videos/' + oldQR + str(time.time()).split('.')[0] + '.avi', cv2.VideoWriter_fourcc(*'x264'), 20.0, (640,480))
 
 def on_mouse(event,x,y,flags,params):
     global oldQR
     global userSignedIn
     global startTime
     global endTime
+    global out
+
     # get mouse click
     if event == cv2.EVENT_LBUTTONDOWN:
         #print "click"
         if userSignedIn:
             endTime = time.time()
             elapsed = endTime - startTime
+            #release and reset video output
+            out.release()
+            out = None
+
             calculate_reward(oldQR, elapsed)
         userSignedIn = False
         oldQR = ''
@@ -64,6 +75,7 @@ def calculate_reward(oldQR, elapsed):
 def main():
     global oldQR
     global userSignedIn
+    global out
 
     #EVENT LOOP
     while(True):
@@ -72,16 +84,23 @@ def main():
         (w,h,d) = frame.shape
         cv2.namedWindow('frame')
         cv2.setMouseCallback('frame', on_mouse)
+        start = time.time()
         if(ret):
             try:
-                #old = frame.copy()
-                #cv2.imshow('frame',np.hstack([old, genFacesFrame(frame)]))
+                detectQR(frame)
+                if out is not None:
+                    print "framewrite"
+                    out.write(frame)
                 frame = genFacesFrame(frame)
+
                 if(userSignedIn):
                     cv2.putText(frame, oldQR, (10,440),  cv2.FONT_HERSHEY_SIMPLEX, 1,(255,255,255),2,cv2.LINE_AA)
 
                 cv2.imshow('frame', frame )
-                detectQR()
+                end = time.time()
+                diff = end-start
+                fps = 1/diff
+                print fps
 
             except Exception as err:
                 print(err)

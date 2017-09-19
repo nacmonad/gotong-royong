@@ -39,14 +39,14 @@ export default class DigitalClock extends Component {
 
   render() {
     const styles = {
-      mostInner: {
+      mostInnerGreen: {
         display:'flex',
         justifyContent:'center',
         alignItems:'center',
         fontFamily: 'roboto',
         fontWeight: '400',
         textAlign: 'center',
-        height: '100px',
+        height: '78px',
         width: '250px',
         border: '1px solid #2ecc40',
         borderRadius: '125px',
@@ -56,7 +56,23 @@ export default class DigitalClock extends Component {
         boxShadow:'0px 0px 31px 2px #2ecc40, inset 0px 0px 31px 2px #2ecc40',
         textShadow:'0 0 5px #fff, 0 0 10px #fff, 0 0 7px #fff, 0 0 20px #88dfff, 0 0 35px #68ffc8, 0 0 40px #68ffc8, 0 0 50px #68ffc8, 0 0 75px #68ffc8,'
       },
-
+      mostInnerRed: {
+        display:'flex',
+        justifyContent:'center',
+        alignItems:'center',
+        fontFamily: 'roboto',
+        fontWeight: '400',
+        textAlign: 'center',
+        height: '78px',
+        width: '250px',
+        border: '1px solid #db2828',
+        borderRadius: '125px',
+        marginTop: '0px',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        boxShadow:'0px 0px 31px 2px #db2828, inset 0px 0px 31px 2px #db2828',
+        textShadow:'0 0 5px #fff, 0 0 10px #fff, 0 0 7px #fff, 0 0 20px #88dfff, 0 0 35px #68ffc8, 0 0 40px #68ffc8, 0 0 50px #68ffc8, 0 0 75px #68ffc8,'
+      },
       time :{
         color: 'white',
         fontSize: '34px',
@@ -77,7 +93,7 @@ export default class DigitalClock extends Component {
 
     }
     return (
-          <div className="most-inner" style={styles.mostInner}>
+          <div className="most-inner" style={ this.props.switchState ? styles.mostInnerGreen : styles.mostInnerRed }>
             <span className={
               this.state.time === "00:00:00"
                 ? "time blink"
