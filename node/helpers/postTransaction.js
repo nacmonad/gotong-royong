@@ -1,13 +1,15 @@
 var tokenContract = require('../config').tokenContract()
 var web3 = require('../config').instance();
 var Account = require('../config').Account()
-var addressParser = require('./addressParser')
+var addressParser = require('./addressParser');
+var calculateReward = require('./calculateReward');
 
 exports.postTransaction = async function (address, time) {
   //check if iban address
   console.log(address)
-  console.log(addressParser(address))
   console.log(time)
+  console.log(addressParser(address))
+  //console.log(calculateReward(time))
   console.log(Account)
 
   try {
@@ -19,11 +21,11 @@ exports.postTransaction = async function (address, time) {
 
     let tx = {}
     //tx.nonce = await web3.eth.getTransactionCount(Account.public);
-    tx.nonce = await web3.eth.getTransactionCount(Account.address);
+    tx.nonce = await web3.eth.getTransactionCount(Account.address);  //lost some tx failed nonces
     tx.chainId = 42;  //Kovan
     tx.from = Account.address;
     tx.to = tokenContract.options.address;
-    tx.data = tokenContract.methods.awardToken(addressParser(address),"1000000000000000").encodeABI();
+    tx.data = tokenContract.methods.awardToken(addressParser(address), calculateReward(time)).encodeABI();
     // //tx.gas = await web3.eth.getGasPrice();
     tx.gas = 228888;
     tx.gasPrice = 20000000000;  //20 GWei

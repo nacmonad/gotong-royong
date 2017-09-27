@@ -6,8 +6,6 @@ import threading
 import time
 import subprocess
 import os
-
-import zbar
 import zbarlight
 from PIL import Image
 

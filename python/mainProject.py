@@ -9,7 +9,7 @@ import capture
 
 def main():
     print "Hello main!"
-    print capture
+    capture.start_video_recording("adflkj.avi")
 
 
 if __name__ == "__main__":

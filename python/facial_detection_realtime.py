@@ -2,21 +2,20 @@ import sys
 import numpy as np
 import cv2
 import time
-import zbar
 import zbarlight
 from PIL import Image
 from sklearn.cluster import KMeans
 
 #facial detection params
 face_cascade = cv2.CascadeClassifier('/home/nacmonad/Downloads/OpenCV/data/haarcascades/haarcascade_frontalface_default.xml')
-
+grayscaleFile = '/home/nacmonad/Documents/Dapps/gotong-royong-cv/grayscale.png'
 #set up webcam
 cap = cv2.VideoCapture(0)
 out = None
 
 def genFacesFrame(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    cv2.imwrite('./grayscale.png', gray)
+    cv2.imwrite(grayscaleFile, gray)
 
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     for (x,y,w,h) in faces:
@@ -31,7 +30,7 @@ def detectQR(frame):
     global startTime
     global out
 
-    image = Image.open('./grayscale.png')
+    image = Image.open(grayscaleFile)
     image.load()
     codes = str(zbarlight.scan_codes('qrcode', image))
 
@@ -42,9 +41,9 @@ def detectQR(frame):
             #start recording as well
             userSignedIn = True
             startTime = time.time()
-        if out is None:
-            print("file created")
-            out = cv2.VideoWriter('./videos/' + oldQR + str(time.time()).split('.')[0] + '.avi', cv2.VideoWriter_fourcc(*'x264'), 20.0, (640,480))
+        #if out is None:
+        #    print("file created")
+        #    out = cv2.VideoWriter('./videos/' + oldQR + str(time.time()).split('.')[0] + '.avi', cv2.VideoWriter_fourcc(*'x264'), 20.0, (640,480))
 
 def on_mouse(event,x,y,flags,params):
     global oldQR
@@ -60,8 +59,8 @@ def on_mouse(event,x,y,flags,params):
             endTime = time.time()
             elapsed = endTime - startTime
             #release and reset video output
-            out.release()
-            out = None
+            #out.release()
+            #out = None
 
             calculate_reward(oldQR, elapsed)
         userSignedIn = False
@@ -84,23 +83,21 @@ def main():
         (w,h,d) = frame.shape
         cv2.namedWindow('frame')
         cv2.setMouseCallback('frame', on_mouse)
-        start = time.time()
+
         if(ret):
             try:
                 detectQR(frame)
-                if out is not None:
-                    print "framewrite"
-                    out.write(frame)
                 frame = genFacesFrame(frame)
+
+                #if out is not None:
+                #    print "framewrite"
+                #    out.write(frame)
 
                 if(userSignedIn):
                     cv2.putText(frame, oldQR, (10,440),  cv2.FONT_HERSHEY_SIMPLEX, 1,(255,255,255),2,cv2.LINE_AA)
 
                 cv2.imshow('frame', frame )
-                end = time.time()
-                diff = end-start
-                fps = 1/diff
-                print fps
+
 
             except Exception as err:
                 print(err)
