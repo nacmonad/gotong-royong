@@ -1,15 +1,9 @@
-import cv2
-import pyaudio
-import wave
-import threading
-import time
-import subprocess
-import os
-import capture
+import video_capture
 
 def main():
     print "Hello main!"
-    capture.start_video_recording("adflkj.avi")
+    v = video_capture.VideoCapture()
+    v.start()
 
 
 if __name__ == "__main__":
