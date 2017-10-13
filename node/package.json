@@ -17,7 +17,6 @@
     "opn": "^5.1.0",
     "pretty-bytes": "^4.0.2",
     "python-shell": "^0.4.0",
-    "web3": "^1.0.0-beta.18",
-    "youtube-api": "^2.0.9"
+    "web3": "^1.0.0-beta.18"
   }
 }

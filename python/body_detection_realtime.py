@@ -5,42 +5,33 @@ import time
 import zbarlight
 import idleDetector
 from PIL import Image
-from sklearn.cluster import KMeans
+import PiVideoStream
 import pyautogui
-
-
-
-grayscaleFile = '/home/nacmonad/Documents/Dapps/gotong-royong-cv/graybody.png'
 
 #hog detector
 hog = cv2.HOGDescriptor()
 hog.setSVMDetector( cv2.HOGDescriptor_getDefaultPeopleDetector() )
 
-#set up webcam
-cap = cv2.VideoCapture(0)
+#set up rpithread
+vs = PiVideoStream.PiVideoStream().start()
+time.sleep(2)
 
 #idle detector
 idle_detector = idleDetector.idleDetector()
 
-def detectQR(frame):
+def detectQR(gray):
     global oldQR
     global userSignedIn
     global startTime
-
-    image = Image.open(grayscaleFile)
-    image.load()
-    codes = str(zbarlight.scan_codes('qrcode', image))
+    global out
+    codes = str(zbarlight.scan_codes('qrcode', Image.fromarray(gray)))
 
     if(codes != 'None'):
         if(codes != oldQR):
-            oldQR = codes
-            #print("New wallet address detected -- perform away!")
             #start recording as well
+            oldQR = codes
             userSignedIn = True
             startTime = time.time()
-        #if out is None:
-        #    print("file created")
-        #    out = cv2.VideoWriter('./videos/' + oldQR + str(time.time()).split('.')[0] + '.avi', cv2.VideoWriter_fourcc(*'x264'), 20.0, (640,480))
 
 
 def inside(r, q):
@@ -81,41 +72,45 @@ def calculate_reward(oldQR, elapsed):
     print(oldQR + ' ' + str(elapsed))
     sys.stdout.flush()
 
+def downSample(gray, maxWidth):
+    r = maxWidth / gray.shape[1]
+    dim = (maxWidth, int(gray.shape[0] * r))
+    return cv2.resize(gray, dim, interpolation = cv2.INTER_AREA)
 
 def main():
     global oldQR
     global userSignedIn
     global out
-
+    
     #EVENT LOOP
     while(True):
-        #Capture Frame
-        ret, frame = cap.read()
+        ret, frame = True, vs.read()
         (w,h,d) = frame.shape
         cv2.namedWindow('frame')
+        cv2.moveWindow('frame', 50, 50)
         cv2.setMouseCallback('frame', on_mouse)
-
+        #userSignedIn = True
         if(ret):
             try:
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                cv2.imwrite(grayscaleFile, gray)
                 detectQR(frame)
-
 
                 if(userSignedIn):
                     cv2.putText(frame, oldQR, (10,440),  cv2.FONT_HERSHEY_SIMPLEX, 1,(255,255,255),2,cv2.LINE_AA)
 
-                    #r = 50.0 / frame.shape[1]
-                    #dim = (50, int(frame.shape[0] * r))
-                    #ds = cv2.resize(frame, dim, interpolation = cv2.INTER_AREA)
+                    ds = downSample(gray, 250)
                     #ds = ds.reshape((ds.shape[0]*ds.shape[1]),3)
-
-                    found,w=hog.detectMultiScale(frame, winStride=(8,8), padding=(32,32), scale=1.05)
-                    draw_detections(frame,found)
+                    found,w=hog.detectMultiScale(ds, winStride=(8,8), padding=(32,32), scale=1.05)
+                    #found = map(lambda x:x/r,found)
+                    found = (1/r) * np.array(found)
+                    if type(w) is np.ndarray:
+                        draw_detections(frame,found.astype(int))
                     idle_detector.checkFrame(w)
                     if(idle_detector.idleFrameCount > 20):
-                        pyautogui.click(100, 100)
-
+                        pyautogui.click(400, 400)
+                        idle_detector.reset()
+                #else:
+                #    time.sleep(0.07)
                 cv2.imshow('frame', frame )
 
 
@@ -124,9 +119,7 @@ def main():
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
-    # When everything done, release the capture
-    cap.release()
+    vs.stop()
     cv2.destroyAllWindows()
 
 

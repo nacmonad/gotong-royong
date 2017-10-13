@@ -1,6 +1,6 @@
 /node/node_modules
 /node/config
-
+/.AppleDouble
 *.avi
 *.wav
 *.mp4

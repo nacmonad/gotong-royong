@@ -1,5 +1,5 @@
 var Web3 = require('web3');
-var web3 = new Web3(new Web3.providers.HttpProvider(`http://localhost:8545`));
+var web3 = new Web3(new Web3.providers.HttpProvider("http://10.10.21.201:8545"));
 var hexToBytes = require('../helpers/hexToBytes').hexToBytes;
 var ethUtil = require('ethereumjs-util')
 
