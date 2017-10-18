@@ -31,7 +31,6 @@ def on_mouse(event,x,y,flags,params):
 
     # get mouse click
     if event == cv2.EVENT_LBUTTONDOWN:
-        #print "click"
         if userSignedIn:
             endTime = time.time()
             elapsed = endTime - startTime
@@ -47,7 +46,6 @@ def detectQR(gray):
 
     if(codes != 'None'):
         if(codes != oldQR):
-            print "bang"
 	    oldQR = codes
             userSignedIn = True
             startTime = time.time()
@@ -64,12 +62,13 @@ def inside(r, q):
 
 
 def draw_detections(img, rects, thickness = 1):
-    print rects
     for x, y, w, h in rects:
-        # the HOG detector returns slightly larger rectangles than the real objects.
+	print rects
+	# the HOG detector returns slightly larger rectangles than the real objects.
         # so we slightly shrink the rectangles to get a nicer output.
 	pad_w, pad_h = int(0.15*w), int(0.05*h)
         cv2.rectangle(img, (x+pad_w, y+pad_h), (x+w-pad_w, y+h-pad_h), (0, 255, 0), thickness)
+    return img
 
 def calculate_reward(oldQR, elapsed):
     print(oldQR + ' ' + str(elapsed))
@@ -81,6 +80,7 @@ def pipelineThread(proc_q, return_q):
     global userSignedIn
     oldQR = "None"
     userSignedIn = False
+    COUNT_LIMIT = 120
 
     while(True):
         if(not proc_q.empty()):
@@ -92,24 +92,27 @@ def pipelineThread(proc_q, return_q):
 
             if(not userSignedIn):
                 detectQR(gray)
+		proc_frame = cv2.flip(proc_frame,0)
             else:
                 #downsample and feed through processing pipeline
+
                 ds,r = downSample(gray, 250)
-                cv2.putText(proc_frame, oldQR, (10,440),  cv2.FONT_HERSHEY_SIMPLEX, 1,(255,255,255),2,cv2.LINE_AA)
                 found,w=hog.detectMultiScale(ds, winStride=(8,8), padding=(32,32), scale=1.05)
-                found = map(lambda x:x/r,found)
 
                 #resize bounds for original frame
                 found = (1/r) * np.array(found)
                 if type(w) is np.ndarray:
-                    draw_detections(proc_frame,found.astype(int))
+                    proc_frame = draw_detections(proc_frame,found.astype(int))
 
                 #check idle counts
                 idle_detector.checkFrame(w)
-                if(idle_detector.idleFrameCount > 120):
+                proc_frame = cv2.flip(proc_frame,0)
+		cv2.putText(proc_frame, oldQR, (10,440),  cv2.FONT_HERSHEY_SIMPLEX, 0.7,(255,255,255),2,cv2.LINE_AA)
+                if(idle_detector.idleFrameCount > COUNT_LIMIT):
                     on_mouse(cv2.EVENT_LBUTTONDOWN, 0, 0, (), ())
                     idle_detector.reset()
-	    
+
+            #proc_frame = cv2.flip(proc_frame, 0)
             #add to return queue
             return_q.put(proc_frame)
             #proc_q.task_done()
@@ -143,6 +146,7 @@ def main():
         lock.acquire()
         ret, frame = True, cap_thread.read()
         lock.release()
+
         proc_q.put(frame)
         #userSignedIn = True
 

@@ -8,8 +8,7 @@ exports.pythonListener = function() {
 
   //var youtubeUploader = require('./youtubeUploader').youtubeUploader(__dirname + '/../../python/derp.avi');
   function spawnProcess() {
-    //var py    = spawn('python', ['../python/body_detection_realtime.py']);
-    var py    = spawn('python', ['../python/facial_detection_realtime.py']);
+    var py    = spawn('python', ['../python/main_face.py']);
     py.stdout.on('data', function(data){
       splitted = data.toString('utf8').split(" ");
       postTransaction(splitted[0], splitted[1]);

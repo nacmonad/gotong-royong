@@ -37,7 +37,6 @@ def detectQR(gray):
     global oldQR
     global userSignedIn
     global startTime
-    global out
 
     codes = str(zbarlight.scan_codes('qrcode', Image.fromarray(gray)))
 
@@ -81,10 +80,12 @@ def main():
     global oldQR
     global userSignedIn
     global out
-
+    lock = threading.Lock()
     #EVENT LOOP
     while(True):
+        lock.acquire()
         ret, frame = True, vs.read()
+        lock.release()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         #downsample hereq
         (w,h,d) = frame.shape

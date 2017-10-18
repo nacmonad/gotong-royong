@@ -13,11 +13,11 @@ from multiprocessing import Queue
 
 #use inputargs to set detection mode
 #hog detector
-hog = cv2.HOGDescriptor()
-hog.setSVMDetector( cv2.HOGDescriptor_getDefaultPeopleDetector() )
+#hog = cv2.HOGDescriptor()
+#hog.setSVMDetector( cv2.HOGDescriptor_getDefaultPeopleDetector() )
 
 #facial detection params
-#face_cascade = cv2.CascadeClassifier('/home/pi/opencv/data/haarcascades/haarcascade_frontalface_default.xml')
+face_cascade = cv2.CascadeClassifier('/home/pi/opencv/data/haarcascades/haarcascade_frontalface_default.xml')
 
 #idle detector in main thread
 idle_detector = idleDetector.idleDetector()
@@ -38,6 +38,7 @@ def on_mouse(event,x,y,flags,params):
             calculate_reward(oldQR, elapsed)
         userSignedIn = False
         oldQR = ''
+        idle_detector.reset()
 
 def detectQR(gray):
     global oldQR
@@ -47,7 +48,6 @@ def detectQR(gray):
 
     if(codes != 'None'):
         if(codes != oldQR):
-            print "bang"
 	    oldQR = codes
             userSignedIn = True
             startTime = time.time()
@@ -57,19 +57,19 @@ def downSample(gray, maxWidth):
     dim = (maxWidth, int(gray.shape[0] * r))
     return cv2.resize(gray, dim, interpolation = cv2.INTER_AREA), r
 
-def inside(r, q):
-    rx, ry, rw, rh = r
-    qx, qy, qw, qh = q
-    return rx > qx and ry > qy and rx + rw < qx + qw and ry + rh < qy + qh
+def genFacesFrame(img, gray):
 
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    if len(faces) == 0:
+        idle_detector.increment()
+    else:
+        idle_detector.reset()
+    for (x,y,w,h) in faces:
+        cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
+        roi_gray = gray[y:y+h, x:x+w]
+        roi_color = img[y:y+h, x:x+w]
 
-def draw_detections(img, rects, thickness = 1):
-    print rects
-    for x, y, w, h in rects:
-        # the HOG detector returns slightly larger rectangles than the real objects.
-        # so we slightly shrink the rectangles to get a nicer output.
-	pad_w, pad_h = int(0.15*w), int(0.05*h)
-        cv2.rectangle(img, (x+pad_w, y+pad_h), (x+w-pad_w, y+h-pad_h), (0, 255, 0), thickness)
+    return img
 
 def calculate_reward(oldQR, elapsed):
     print(oldQR + ' ' + str(elapsed))
@@ -81,35 +81,36 @@ def pipelineThread(proc_q, return_q):
     global userSignedIn
     oldQR = "None"
     userSignedIn = False
+    COUNT_LIMIT = 120
 
     while(True):
         if(not proc_q.empty()):
             proc_frame = proc_q.get()
-            #flip it vertically
+	    (h,w,d) = proc_frame.shape
+            
+	    #flip it vertically
+            #proc_frame = cv2.flip(proc_frame,0)
 	    #proc_frame = cv2.flip(proc_frame,0)
 	    # gray_scale it!
             gray = cv2.cvtColor(proc_frame, cv2.COLOR_BGR2GRAY)
 
             if(not userSignedIn):
+                proc_frame = cv2.flip(proc_frame,0)
                 detectQR(gray)
             else:
                 #downsample and feed through processing pipeline
-                ds,r = downSample(gray, 250)
-                cv2.putText(proc_frame, oldQR, (10,440),  cv2.FONT_HERSHEY_SIMPLEX, 1,(255,255,255),2,cv2.LINE_AA)
-                found,w=hog.detectMultiScale(ds, winStride=(8,8), padding=(32,32), scale=1.05)
-                found = map(lambda x:x/r,found)
+                #ds,r = downSample(gray, 250)
 
-                #resize bounds for original frame
-                found = (1/r) * np.array(found)
-                if type(w) is np.ndarray:
-                    draw_detections(proc_frame,found.astype(int))
+                #found,w=hog.detectMultiScale(ds, winStride=(8,8), padding=(32,32), scale=1.05)
+                proc_frame = genFacesFrame(proc_frame, gray)
+                proc_frame = cv2.flip(proc_frame,0)
+                cv2.putText(proc_frame, oldQR, (10,h-20),  cv2.FONT_HERSHEY_SIMPLEX, 0.7,(255,255,255),2,cv2.LINE_AA)
 
-                #check idle counts
-                idle_detector.checkFrame(w)
-                if(idle_detector.idleFrameCount > 120):
+                if(idle_detector.idleFrameCount > COUNT_LIMIT):
                     on_mouse(cv2.EVENT_LBUTTONDOWN, 0, 0, (), ())
                     idle_detector.reset()
-	    
+
+            #proc_frame = cv2.flip(proc_frame, 0)
             #add to return queue
             return_q.put(proc_frame)
             #proc_q.task_done()
@@ -143,6 +144,7 @@ def main():
         lock.acquire()
         ret, frame = True, cap_thread.read()
         lock.release()
+
         proc_q.put(frame)
         #userSignedIn = True
 
